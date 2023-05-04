@@ -2,3 +2,8 @@ name: SLCoi
 version: '${project.version}'
 main: org.mythril.slcoi.SLCoi
 api-version: 1.19
+commands:
+  fingerbase:
+    usage: /fingerbase <add/remove> <name>
+    permission: "fingerbase.use"
+    permission-message: "У вас недостаточно прав!"
