@@ -1,0 +1,4 @@
+name: SLCoi
+version: '${project.version}'
+main: org.mythril.slcoi.SLCoi
+api-version: 1.19
