@@ -3,6 +3,10 @@ version: '${project.version}'
 main: org.mythril.slcoi.SLCoi
 api-version: 1.19
 commands:
+  stopmove:
+    usage: /stopmove <nickname> <time_seconds>
+    permission: "fingerbase.use"
+    permission-message: "§4У вас недостаточно прав!"
   fingerbase:
     usage: /fingerbase <add/remove> <name>
     permission: "fingerbase.use"

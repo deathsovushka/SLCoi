@@ -5,27 +5,16 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.reflect.StructureModifier;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import com.google.gson.Gson;
-import io.papermc.paper.event.player.AsyncChatEvent;
+import net.coreprotect.CoreProtect;
+import net.coreprotect.CoreProtectAPI;
 import net.coreprotect.event.CoreProtectPreLogEvent;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import net.coreprotect.CoreProtect;
-import net.coreprotect.CoreProtectAPI;
-import org.jetbrains.annotations.NotNull;
 
-import javax.print.attribute.DateTimeSyntax;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +24,7 @@ public final class SLCoi extends JavaPlugin implements Listener {
     public static List<String> base = new ArrayList<>();
     public static HashMap<String, Integer> ids = new HashMap<>();
     public static Plugin plugin;
+    private ProtocolManager protocolManager;
 
     @Override
     public void onEnable() {
@@ -42,7 +32,12 @@ public final class SLCoi extends JavaPlugin implements Listener {
         plugin = this;
         saveDefaultConfig();
         Objects.requireNonNull(this.getCommand("fingerbase")).setExecutor(new CommandExe());
+        Objects.requireNonNull(this.getCommand("stopmove")).setExecutor(new StopMoveCommand());
         Bukkit.getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(new EventListener(), this);
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new Placeholders().register();
+        }
         protocolManager.addPacketListener(new PacketAdapter(
                 this,
                 ListenerPriority.NORMAL,
@@ -50,12 +45,12 @@ public final class SLCoi extends JavaPlugin implements Listener {
         ) {
             @Override
             public void onPacketSending(PacketEvent event) {
-                for (String string: ids.keySet()
-                     ) {
-                    if(event.getPacket().getStrings().read(0) == null) return;
-                    if (event.getPacket().getStrings().read(0).contains("\"text\":\"§k" + ids.get(string))){
+                for (String string : ids.keySet()
+                ) {
+                    if (event.getPacket().getStrings().read(0) == null) return;
+                    if (event.getPacket().getStrings().read(0).contains("\"text\":\"§k" + ids.get(string))) {
                         String strin;
-                        if(base.contains(string) || event.getPlayer().hasPermission("base.bypass")){
+                        if (base.contains(string) || event.getPlayer().hasPermission("base.bypass")) {
                             strin = event.getPacket().getStrings().read(0).replace("\"text\":\"§k" + ids.get(string), "\"text\":\"" + string);
                         } else {
                             strin = event.getPacket().getStrings().read(0).replace("\"text\":\"§k" + ids.get(string), "\"text\":\"Неизвестный");
@@ -66,11 +61,11 @@ public final class SLCoi extends JavaPlugin implements Listener {
             }
         });
     }
-    private ProtocolManager protocolManager;
 
     public void onLoad() {
         protocolManager = ProtocolLibrary.getProtocolManager();
     }
+
     @Override
     public void onDisable() {
         save();
@@ -79,12 +74,13 @@ public final class SLCoi extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void detect(CoreProtectPreLogEvent event){
-        if(!(ids.containsKey(event.getUser()))){
+    public void detect(CoreProtectPreLogEvent event) {
+        if (!(ids.containsKey(event.getUser()))) {
             ids.put(event.getUser(), random());
         }
         event.setUser("§k" + ids.get(event.getUser()));
     }
+
     private CoreProtectAPI getCoreProtect() {
         Plugin plugin = getServer().getPluginManager().getPlugin("CoreProtect");
 
@@ -107,10 +103,10 @@ public final class SLCoi extends JavaPlugin implements Listener {
         return CoreProtect;
     }
 
-    public Integer random(){
+    public Integer random() {
         Random random = new Random();
         int id = random.nextInt(10000, 100000);
-        if(!(ids.containsValue(id))){
+        if (!(ids.containsValue(id))) {
             return id;
         }
         return random();
