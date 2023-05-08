@@ -6,17 +6,25 @@ import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI;
 import net.coreprotect.event.CoreProtectPreLogEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.Skull;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public final class SLCoi extends JavaPlugin implements Listener {
@@ -50,8 +58,8 @@ public final class SLCoi extends JavaPlugin implements Listener {
                     if (event.getPacket().getStrings().read(0) == null) return;
                     if (event.getPacket().getStrings().read(0).contains("\"text\":\"§k" + ids.get(string))) {
                         String strin;
-                        if (base.contains(string) || event.getPlayer().hasPermission("base.bypass")) {
-                            strin = event.getPacket().getStrings().read(0).replace("\"text\":\"§k" + ids.get(string), "\"text\":\"" + string);
+                        if (base.contains(string) || event.getPlayer().hasPermission("base.bypass") || event.getPacket().getStrings().read(0).contains("enchanted_book") || event.getPacket().getStrings().read(0).contains("spawn_egg")){
+                            strin = event.getPacket().getStrings().read(0).replace("\"text\":\"§k" + ids.get(string), "\"text\":\"" + string + "!");
                         } else {
                             strin = event.getPacket().getStrings().read(0).replace("\"text\":\"§k" + ids.get(string), "\"text\":\"Неизвестный");
                         }
@@ -78,7 +86,36 @@ public final class SLCoi extends JavaPlugin implements Listener {
         if (!(ids.containsKey(event.getUser()))) {
             ids.put(event.getUser(), random());
         }
-        event.setUser("§k" + ids.get(event.getUser()));
+        final Boolean[] contains = {false};
+        BukkitScheduler scheduler = Bukkit.getScheduler();
+        scheduler.runTask(plugin, () -> {
+        if(Bukkit.getPlayer(event.getUser()) != null) {
+            Player player = Bukkit.getPlayer(event.getUser());
+            if (player == null) {
+                return;
+            }
+            for (Block block : getNearbyBlocks(player, 16)
+            ) {
+                if (block.getType() == Material.PLAYER_HEAD || block.getType() == Material.PLAYER_WALL_HEAD) {
+                    if (((Skull) block.getState()).getPlayerProfile() != null) {
+                        for (ProfileProperty profileProperty : ((Skull) block.getState()).getPlayerProfile().getProperties()
+                        ) {
+                            if (profileProperty.getName().equals("textures")) {
+                                if (profileProperty.getValue().equals("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjgwNWQ1NWYyMWI0OWEwNzRjZDVlM2RjMjQ0YTVhMDcwZTU1NDRiNTRmYTkyNTRkMmRjMmUxOGYxZTY4MDJmOSJ9fX0=")) {
+                                    contains[0] = true;
+                                    event.setUser(event.getUser() + " (Камера)");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        });
+        if(!contains[0]) {
+            event.setUser("§k" + ids.get(event.getUser()));
+        }
     }
 
     private CoreProtectAPI getCoreProtect() {
@@ -163,5 +200,35 @@ public final class SLCoi extends JavaPlugin implements Listener {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static Block[] getNearbyBlocks(Player player, int radius) {
+        // Получаем текущую локацию игрока
+        Location playerLocation = player.getLocation();
+
+        // Вычисляем границы области поиска
+        int minX = playerLocation.getBlockX() - radius;
+        int minY = playerLocation.getBlockY() - radius;
+        int minZ = playerLocation.getBlockZ() - radius;
+        int maxX = playerLocation.getBlockX() + radius;
+        int maxY = playerLocation.getBlockY() + radius;
+        int maxZ = playerLocation.getBlockZ() + radius;
+
+        // Создаем массив для хранения найденных блоков
+        int size = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        Block[] nearbyBlocks = new Block[size];
+
+        int index = 0;
+        // Проходим по всем блокам в области поиска и добавляем их в массив
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    Block block = player.getWorld().getBlockAt(x, y, z);
+                    nearbyBlocks[index++] = block;
+                }
+            }
+        }
+
+        return nearbyBlocks;
     }
 }
